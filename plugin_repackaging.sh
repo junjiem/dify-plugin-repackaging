@@ -13,6 +13,12 @@ CURR_DIR=`dirname $0`
 cd $CURR_DIR
 CURR_DIR=`pwd`
 USER=`whoami`
+ARCH_NAME=`uname -m`
+
+CMD_NAME="dify-plugin-linux-amd64-5g"
+if [[ "arm64" == "$ARCH_NAME" || "aarch64" == "$ARCH_NAME" ]]; then
+	CMD_NAME="dify-plugin-linux-arm64-5g"
+fi
 
 market(){
 	if [[ -z "$2" || -z "$3" || -z "$4" ]]; then
@@ -109,8 +115,8 @@ repackage(){
 		sed -i '/^wheels\//d' .difyignore
 	fi
 	cd ${CURR_DIR}
-	chmod 755 ${CURR_DIR}/dify-plugin-linux-amd64-5g
-	${CURR_DIR}/dify-plugin-linux-amd64-5g plugin package ${CURR_DIR}/${PACKAGE_NAME} -o ${CURR_DIR}/${PACKAGE_NAME}-offline.difypkg
+	chmod 755 ${CURR_DIR}/${CMD_NAME}
+	${CURR_DIR}/${CMD_NAME} plugin package ${CURR_DIR}/${PACKAGE_NAME} -o ${CURR_DIR}/${PACKAGE_NAME}-offline.difypkg
 	echo "Repackage success."
 }
 
