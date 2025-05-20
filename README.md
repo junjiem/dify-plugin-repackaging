@@ -2,7 +2,8 @@
 
 
 ### Prerequisites
-Operating System: Linux amd64
+
+Operating System: Linux amd64/aarch64, MacOS x86_64/arm64
 
 **Notes**: The script uses `yum` to install `unzip` which is only avialable on RPM-based Linux systems(such as `Red Hat Enterprise Linux`, `CentOS`, `Fedora`, and `Oracle Linux`), and is now replaced by `dnf` in latest version. To use the script on other distributions, please install `unzip` command in advance.
 
@@ -10,6 +11,7 @@ Operating System: Linux amd64
 因此，当使用其他Linux分发版或者无法使用`yum`时，请事先安装`unzip`命令。
 
 Python version: Should be as the same as the version in `dify-plugin-daemon` which is currently 3.12.x
+
 
 #### Clone
 ```shell
@@ -64,7 +66,13 @@ git clone https://github.com/junjiem/dify-plugin-repackaging.git
 
 ![db_query](images/db_query.png)
 
+#### Platform Crossing Repacking
 
+For repacking the plugins in different platforms between operating and running environment, 
+please using `-p` option with a pip platform string.
+
+Typically, uses `manylinux2014_x86_64` for plugins running on an `x86_64/amd64` OS, 
+and `manylinux2014_aarch64` for `aarch64/arm64`.
 
 ### Update Dify platform env  Dify平台放开限制
 
