@@ -2,10 +2,14 @@
 
 
 ### Prerequisites
-
 Operating System: Linux amd64
 
-Requires Python version is 3.11 or higher
+**Notes**: The script uses `yum` to install `unzip` which is only avialable on RPM-based Linux systems(such as `Red Hat Enterprise Linux`, `CentOS`, `Fedora`, and `Oracle Linux`), and is now replaced by `dnf` in latest version. To use the script on other distributions, please install `unzip` command in advance.
+
+**注意：**本脚本使用`yum`安装`unzip`命令，这只适用于基于RPM的Linux系统（如`Red Hat Enterprise Linux`, `CentOS`, `Fedora`, and `Oracle Linux`）。并且在较新的分发版中，它已被`dnf`所替代。
+因此，当使用其他Linux分发版或者无法使用`yum`时，请事先安装`unzip`命令。
+
+Python version: Should be as the same as the version in `dify-plugin-daemon` which is currently 3.12.x
 
 #### Clone
 ```shell
