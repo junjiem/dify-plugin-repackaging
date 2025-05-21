@@ -3,9 +3,15 @@
 
 ### Prerequisites
 
-Operating System: Linux amd64
+Operating System: Linux amd64/aarch64, MacOS x86_64/arm64
 
-Requires Python version is 3.11 or higher
+**Notes**: The script uses `yum` to install `unzip` which is only avialable on RPM-based Linux systems(such as `Red Hat Enterprise Linux`, `CentOS`, `Fedora`, and `Oracle Linux`), and is now replaced by `dnf` in latest version. To use the script on other distributions, please install `unzip` command in advance.
+
+**注意：**本脚本使用`yum`安装`unzip`命令，这只适用于基于RPM的Linux系统（如`Red Hat Enterprise Linux`, `CentOS`, `Fedora`, and `Oracle Linux`）。并且在较新的分发版中，它已被`dnf`所替代。
+因此，当使用其他Linux分发版或者无法使用`yum`时，请事先安装`unzip`命令。
+
+Python version: Should be as the same as the version in `dify-plugin-daemon` which is currently 3.12.x
+
 
 #### Clone
 ```shell
@@ -60,7 +66,13 @@ git clone https://github.com/junjiem/dify-plugin-repackaging.git
 
 ![db_query](images/db_query.png)
 
+#### Platform Crossing Repacking
 
+For repacking the plugins in different platforms between operating and running environment, 
+please using `-p` option with a pip platform string.
+
+Typically, uses `manylinux2014_x86_64` for plugins running on an `x86_64/amd64` OS, 
+and `manylinux2014_aarch64` for `aarch64/arm64`.
 
 ### Update Dify platform env  Dify平台放开限制
 
@@ -88,10 +100,4 @@ Visit the Dify platform's plugin management page, choose Local Package File to c
 访问 Dify 平台的插件管理页，选择通过本地插件完成安装。
 
 ![install_plugin_via_local](./images/install_plugin_via_local.png)
-
-
-
-### Star history
-
-[![Star History Chart](https://api.star-history.com/svg?repos=junjiem/dify-plugin-repackaging&type=Date)](https://star-history.com/#junjiem/dify-plugin-repackaging&Date)
 

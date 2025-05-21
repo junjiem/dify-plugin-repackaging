@@ -14,11 +14,15 @@ cd $CURR_DIR
 CURR_DIR=`pwd`
 USER=`whoami`
 ARCH_NAME=`uname -m`
+OS_TYPE=$(uname)
+OS_TYPE=$(echo "$OS_TYPE" | tr '[:upper:]' '[:lower:]')
 
-CMD_NAME="dify-plugin-linux-amd64-5g"
+CMD_NAME="dify-plugin-${OS_TYPE}-amd64-5g"
 if [[ "arm64" == "$ARCH_NAME" || "aarch64" == "$ARCH_NAME" ]]; then
-	CMD_NAME="dify-plugin-linux-arm64-5g"
+	CMD_NAME="dify-plugin-${OS_TYPE}-arm64-5g"
 fi
+
+PIP_PLATFORM=""
 
 market(){
 	if [[ -z "$2" || -z "$3" || -z "$4" ]]; then
@@ -105,14 +109,27 @@ repackage(){
 	echo "Unzip success."
 	echo "Repackaging ..."
 	cd ${CURR_DIR}/${PACKAGE_NAME}
-	pip download -r requirements.txt -d ./wheels --index-url ${PIP_MIRROR_URL}
+	pip download ${PIP_PLATFORM} -r requirements.txt -d ./wheels --index-url ${PIP_MIRROR_URL} --trusted-host mirrors.aliyun.com
 	if [[ $? -ne 0 ]]; then
 		echo "Pip download failed."
 		exit 1
 	fi
-	sed -i '1i\--no-index --find-links=./wheels/' requirements.txt
+	if [[ "linux" == "$OS_TYPE"]]; then
+	  sed -i '1i\--no-index --find-links=./wheels/' requirements.txt
+	elif [[ "darwin" == "$OS_TYPE"]]; then
+	  sed -i ".bak" '1i\
+--no-index --find-links=./wheels/
+	  ' requirements.txt
+	  rm -f requirements.txt.bak
+	fi
+
 	if [ -f .difyignore ]; then
-		sed -i '/^wheels\//d' .difyignore
+	  if [[ "linux" == "$OS_TYPE"]]; then
+		  sed -i '/^wheels\//d' .difyignore
+		elif [[ "darwin" == "$OS_TYPE"]]; then
+		  sed -i ".bak" '/^wheels\//d' .difyignore
+		  rm -f .difyignore.bak
+		fi
 	fi
 	cd ${CURR_DIR}
 	chmod 755 ${CURR_DIR}/${CMD_NAME}
@@ -131,6 +148,20 @@ install_unzip(){
 	fi
 }
 
+print_usage() {
+	echo "usage: $0 [-p platform] {market|github|local}"
+	echo "-p platform: python packages' platform. Using for crossing repacking."
+	exit 1
+}
+
+while getopts "p:" opt; do
+	case "$opt" in
+		p) PIP_PLATFORM="--platform ${OPTARG} --only-binary=:all:"; shift $((OPTIND - 1)) ;;
+		*) print_usage; exit 1 ;;
+	esac
+done
+
+echo "$1"
 case "$1" in
 	'market')
 	market $@
@@ -143,7 +174,7 @@ case "$1" in
 	;;
 	*)
 
-echo "usage: $0 {market|github|local}"
+print_usage
 exit 1
 esac
 exit 0
