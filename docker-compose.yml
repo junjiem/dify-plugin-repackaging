@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  repackager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./difypkg:/app/difypkg
+      - ./offline_difypkg:/app/offline_difypkg
+    entrypoint: ["/app/entrypoint.sh"]
+    # It's good practice to ensure the host directories exist or instruct the user.
+    # For robustness, the entrypoint.sh already creates OUTPUT_DIR if not present inside the container.
+    # The user needs to create ./difypkg and ./offline_difypkg on the host.

@@ -60,7 +60,42 @@ git clone https://github.com/junjiem/dify-plugin-repackaging.git
 
 ![db_query](images/db_query.png)
 
+## Offline Plugin Repackaging with Docker
 
+This method uses Docker and Docker Compose to provide a stable Ubuntu 24.04 environment for repackaging plugins. It processes all `.difypkg` files found in a specified input directory and places the offline versions in an output directory.
+
+### Prerequisites for Docker Repackaging
+
+- Docker installed (see [Docker installation guide](https://docs.docker.com/engine/install/))
+- Docker Compose installed (see [Docker Compose installation guide](https://docs.docker.com/compose/install/))
+
+### How to Use Docker Repackaging
+
+1.  **Prepare Directories:**
+    In the root of this project, create two directories if they don't already exist:
+    - `difypkg`: This is where you will place your original `.difypkg` plugin files that you want to convert to offline packages.
+    - `offline_difypkg`: This is where the script will save the repackaged offline plugins.
+
+2.  **Place Your Plugins:**
+    Copy the `.difypkg` files you want to process into the `./difypkg` directory.
+
+3.  **Build and Run:**
+    Open your terminal in the root of this project and run the following commands:
+
+    ```shell
+    # Build the Docker image (only needed the first time or if you change Dockerfile/scripts)
+    docker-compose build
+
+    # Run the repackaging process
+    docker-compose up
+    ```
+
+4.  **Retrieve Offline Plugins:**
+    Once the process is complete (you'll see "All plugins processed." in the terminal output), you will find your repackaged `*-offline.difypkg` files in the `./offline_difypkg` directory.
+
+    You can then stop the Docker Compose process (usually with `Ctrl+C` in the terminal where `docker-compose up` is running). If you run `docker-compose up -d` in the future for detached mode, you would use `docker-compose down` to stop and remove the containers.
+
+This process leverages the `entrypoint.sh` script to automatically find and convert all plugins in the `difypkg` directory.
 
 ### Update Dify platform env  Dify平台放开限制
 
