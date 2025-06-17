@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DifyPkg 离线打包工具</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+
+  <!-- 自定义配置 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#165DFF',
+            secondary: '#00B42A',
+            accent: '#FF7D00',
+            dark: '#1D2129',
+            light: '#F2F3F5'
+          },
+          fontFamily: {
+            inter: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .text-shadow {
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .transition-custom {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .card-hover {
+        @apply hover:shadow-lg hover:-translate-y-1 transition-all duration-300;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen font-inter text-dark">
+  <!-- 顶部导航栏 -->
+  <header class="bg-white shadow-sm sticky top-0 z-50">
+    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa-solid fa-box-archive text-primary text-2xl"></i>
+        <h1 class="text-xl font-bold text-dark">DifyPkg <span class="text-primary">离线打包工具</span></h1>
+      </div>
+      <nav>
+        <ul class="flex space-x-6">
+          <li><a href="#" class="text-gray-600 hover:text-primary transition-custom"><i class="fa-solid fa-home mr-1"></i>首页</a></li>
+          <li><a href="#" class="text-gray-600 hover:text-primary transition-custom"><i class="fa-solid fa-question-circle mr-1"></i>帮助</a></li>
+          <li><a href="#" class="text-gray-600 hover:text-primary transition-custom"><i class="fa-solid fa-info-circle mr-1"></i>关于</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 主要内容 -->
+  <main class="container mx-auto px-4 py-8 md:py-16">
+    <div class="max-w-3xl mx-auto">
+      <!-- 介绍卡片 -->
+      <div class="bg-white rounded-xl shadow-md p-6 mb-8 card-hover">
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+          <i class="fa-solid fa-file-import text-primary mr-2"></i>
+          DifyPkg 离线包生成
+        </h2>
+        <p class="text-gray-600 mb-4">上传 .difypkg 文件，系统将自动生成离线版本，适用于无网络环境使用。</p>
+        <div class="bg-blue-50 border-l-4 border-primary p-4 rounded">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <i class="fa-solid fa-info-circle text-primary"></i>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm text-blue-700">
+                <strong>提示：</strong> 生成的离线包将保留原文件名并添加 "-offline.difypkg" 后缀。
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 文件上传区域 -->
+      <div class="bg-white rounded-xl shadow-md p-6 mb-8 transition-custom" id="upload-container">
+        <form id="upload-form" enctype="multipart/form-data" method="POST" action="/offline">
+          <div class="space-y-4">
+            <!-- 拖放区域 -->
+            <div id="drop-area" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center transition-custom hover:border-primary">
+              <input type="file" id="file-input" name="file" accept=".difypkg" class="hidden">
+
+              <div class="flex flex-col items-center">
+                <i class="fa-solid fa-cloud-upload-alt text-5xl text-gray-400 mb-4 transition-custom group-hover:text-primary"></i>
+                <h3 class="text-lg font-medium text-gray-700 mb-2">拖放 .difypkg 文件到此处</h3>
+                <p class="text-sm text-gray-500 mb-4">或者</p>
+                <button type="button" id="browse-btn" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-custom flex items-center">
+                  <i class="fa-solid fa-folder-open mr-2"></i> 浏览文件
+                </button>
+                <p class="text-xs text-gray-400 mt-4">支持的文件格式: .difypkg</p>
+              </div>
+            </div>
+
+            <!-- 文件名显示 -->
+            <div id="file-info" class="hidden bg-gray-50 p-4 rounded-lg">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <i class="fa-solid fa-file-package text-primary mr-3"></i>
+                  <div>
+                    <p id="file-name" class="font-medium"></p>
+                    <p id="file-size" class="text-xs text-gray-500"></p>
+                  </div>
+                </div>
+                <button type="button" id="remove-file" class="text-red-500 hover:text-red-700 transition-custom">
+                  <i class="fa-solid fa-times-circle"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- 提交按钮 -->
+            <button type="submit" id="submit-btn" class="w-full bg-secondary hover:bg-secondary/90 text-white font-medium py-3 px-6 rounded-lg transition-custom flex items-center justify-center opacity-50 cursor-not-allowed" disabled>
+              <i class="fa-solid fa-cog mr-2"></i>
+              <span>开始生成离线包</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- 结果区域 -->
+      <div id="result-container" class="hidden bg-white rounded-xl shadow-md p-6 mb-8 transition-custom">
+        <div id="loading-state" class="hidden">
+          <div class="flex flex-col items-center justify-center py-8">
+            <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+            <h3 class="text-lg font-medium text-gray-700">正在处理...</h3>
+            <p class="text-sm text-gray-500 mt-2">请稍候，系统正在生成离线包...</p>
+          </div>
+        </div>
+
+        <div id="success-state" class="hidden">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fa-solid fa-check-circle text-green-500 text-3xl"></i>
+            </div>
+            <div class="ml-4">
+              <h3 class="text-lg font-medium text-gray-900">离线包生成成功</h3>
+              <p class="text-sm text-gray-600 mt-1">您的离线包已生成，点击下方按钮下载。</p>
+              <div class="mt-4">
+                <a id="download-link" href="#" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary/90 transition-custom">
+                  <i class="fa-solid fa-download mr-2"></i>
+                  下载离线包
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="error-state" class="hidden">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fa-solid fa-exclamation-circle text-red-500 text-3xl"></i>
+            </div>
+            <div class="ml-4">
+              <h3 class="text-lg font-medium text-gray-900">处理失败</h3>
+              <p id="error-message" class="text-sm text-gray-600 mt-1">生成离线包时发生错误，请重试。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="bg-dark text-white py-8 mt-auto">
+    <div class="container mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-box-archive text-primary text-xl"></i>
+            <span class="font-bold text-lg">DifyPkg 离线打包工具</span>
+          </div>
+          <p class="text-gray-400 text-sm mt-2">高效生成离线包，适用于各种环境</p>
+        </div>
+
+        <div class="flex space-x-6">
+          <a href="#" class="text-gray-400 hover:text-white transition-custom">
+            <i class="fa-brands fa-github text-xl"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-custom">
+            <i class="fa-brands fa-twitter text-xl"></i>
+          </a>
+          <a href="#" class="text-gray-400 hover:text-white transition-custom">
+            <i class="fa-brands fa-linkedin text-xl"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="border-t border-gray-800 mt-6 pt-6 text-center text-gray-400 text-sm">
+        <p>© 2025 DifyPkg 离线打包工具 | 版权所有</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const dropArea = document.getElementById('drop-area');
+      const fileInput = document.getElementById('file-input');
+      const browseBtn = document.getElementById('browse-btn');
+      const fileInfo = document.getElementById('file-info');
+      const fileName = document.getElementById('file-name');
+      const fileSize = document.getElementById('file-size');
+      const removeFile = document.getElementById('remove-file');
+      const submitBtn = document.getElementById('submit-btn');
+      const uploadForm = document.getElementById('upload-form');
+      const resultContainer = document.getElementById('result-container');
+      const loadingState = document.getElementById('loading-state');
+      const successState = document.getElementById('success-state');
+      const errorState = document.getElementById('error-state');
+      const errorMessage = document.getElementById('error-message');
+      const downloadLink = document.getElementById('download-link');
+
+      // 拖放事件处理
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+      });
+
+      function highlight() {
+        dropArea.classList.add('border-primary', 'bg-blue-50');
+      }
+
+      function unhighlight() {
+        dropArea.classList.remove('border-primary', 'bg-blue-50');
+      }
+
+      dropArea.addEventListener('drop', handleDrop, false);
+
+      function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+      }
+
+      // 浏览文件按钮
+      browseBtn.addEventListener('click', () => {
+        fileInput.click();
+      });
+
+      // 文件选择事件
+      fileInput.addEventListener('change', () => {
+        handleFiles(fileInput.files);
+      });
+
+      // 处理选中的文件
+      function handleFiles(files) {
+        if (files.length > 0) {
+          const file = files[0];
+          if (!file.name.endsWith('.difypkg')) {
+            showError('请上传 .difypkg 格式的文件');
+            return;
+          }
+
+          showFileInfo(file);
+          enableSubmitButton();
+        }
+      }
+
+      // 显示文件信息
+      function showFileInfo(file) {
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        fileInfo.classList.remove('hidden');
+        fileInfo.classList.add('animate-fadeIn');
+      }
+
+      // 格式化文件大小
+      function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+      }
+
+      // 移除文件
+      removeFile.addEventListener('click', () => {
+        fileInput.value = '';
+        fileInfo.classList.add('hidden');
+        disableSubmitButton();
+      });
+
+      // 启用提交按钮
+      function enableSubmitButton() {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        submitBtn.classList.add('opacity-100', 'cursor-pointer');
+      }
+
+      // 禁用提交按钮
+      function disableSubmitButton() {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        submitBtn.classList.remove('opacity-100', 'cursor-pointer');
+      }
+
+      // 表单提交处理
+      uploadForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        // 显示加载状态
+        showLoadingState();
+
+        try {
+          // 创建 FormData 对象
+          const formData = new FormData();
+          formData.append('file', fileInput.files[0]);
+
+          // 发送请求
+          const response = await fetch('/offline', {
+            method: 'POST',
+            body: formData
+          });
+
+          if (response.ok) {
+            // 成功响应，获取文件内容
+            const blob = await response.blob();
+            const contentDisposition = response.headers.get('content-disposition');
+            let fileName = 'offline-package.difypkg';
+
+            // 尝试从响应头中获取文件名
+            if (contentDisposition) {
+              const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+              if (fileNameMatch && fileNameMatch[1]) {
+                fileName = fileNameMatch[1];
+              }
+            }
+
+            // 创建下载链接
+            const url = window.URL.createObjectURL(blob);
+            downloadLink.href = url;
+            downloadLink.download = fileName;
+
+            // 显示成功状态
+            showSuccessState();
+
+            setTimeout(() => {
+              // 释放 URL 对象
+              window.URL.revokeObjectURL(url);
+            }, 50000);
+          } else {
+            // 错误响应
+            const errorData = await response.json();
+            showError(errorData.error || '处理失败，请重试');
+          }
+        } catch (error) {
+          // 网络错误
+          showError('网络错误，请检查连接');
+          console.error('上传失败:', error);
+        }
+      });
+
+      // 显示加载状态
+      function showLoadingState() {
+        resultContainer.classList.remove('hidden');
+        loadingState.classList.remove('hidden');
+        successState.classList.add('hidden');
+        errorState.classList.add('hidden');
+      }
+
+      // 显示成功状态
+      function showSuccessState() {
+        loadingState.classList.add('hidden');
+        successState.classList.remove('hidden');
+        errorState.classList.add('hidden');
+      }
+
+      // 显示错误状态
+      function showError(message) {
+        resultContainer.classList.remove('hidden');
+        loadingState.classList.add('hidden');
+        successState.classList.add('hidden');
+        errorState.classList.remove('hidden');
+        errorMessage.textContent = message;
+      }
+
+      // 添加淡入动画
+      document.head.insertAdjacentHTML('beforeend', `
+        <style>
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out forwards;
+          }
+        </style>
+      `);
+    });
+  </script>
+</body>
+</html>

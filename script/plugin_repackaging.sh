@@ -12,6 +12,10 @@ PIP_MIRROR_URL="${PIP_MIRROR_URL:-$DEFAULT_PIP_MIRROR_URL}"
 CURR_DIR=`dirname $0`
 cd $CURR_DIR
 CURR_DIR=`pwd`
+PKG_DIR="${CURR_DIR}/../difypkg"
+mkdir -p ${PKG_DIR}
+OFFLINE_DIR="${CURR_DIR}/../difypkg-offline"
+mkdir -p ${OFFLINE_DIR}
 USER=`whoami`
 ARCH_NAME=`uname -m`
 OS_TYPE=$(uname)
@@ -102,14 +106,14 @@ repackage(){
 	PACKAGE_NAME="${PACKAGE_NAME_WITH_EXTENSION%.*}"
 	echo "Unziping ..."
 	install_unzip
-	unzip -o ${PACKAGE_PATH} -d ${CURR_DIR}/${PACKAGE_NAME}
+	unzip -o ${PACKAGE_PATH} -d ${PKG_DIR}/${PACKAGE_NAME}
 	if [[ $? -ne 0 ]]; then
 		echo "Unzip failed."
 		exit 1
 	fi
 	echo "Unzip success."
 	echo "Repackaging ..."
-	cd ${CURR_DIR}/${PACKAGE_NAME}
+	cd ${PKG_DIR}/${PACKAGE_NAME}
 	pip download ${PIP_PLATFORM} -r requirements.txt -d ./wheels --index-url ${PIP_MIRROR_URL} --trusted-host mirrors.aliyun.com
 	if [[ $? -ne 0 ]]; then
 		echo "Pip download failed."
@@ -137,8 +141,9 @@ repackage(){
 	fi
 	cd ${CURR_DIR}
 	chmod 755 ${CURR_DIR}/${CMD_NAME}
-	${CURR_DIR}/${CMD_NAME} plugin package ${CURR_DIR}/${PACKAGE_NAME} -o ${CURR_DIR}/${PACKAGE_NAME}-${PACKAGE_SUFFIX}.difypkg
+	${CURR_DIR}/${CMD_NAME} plugin package ${PKG_DIR}/${PACKAGE_NAME} -o ${OFFLINE_DIR}/${PACKAGE_NAME}-${PACKAGE_SUFFIX}.difypkg
 	echo "Repackage success."
+	rm -rf ${PKG_DIR}/${PACKAGE_NAME}
 }
 
 install_unzip(){
