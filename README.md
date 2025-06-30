@@ -1,5 +1,34 @@
 ## Dify 1.0 Plugin Downloading and Repackaging
+### How To Use With Docker
 
+1.change param in dockerfile
+
+```dockerfile
+CMD ["./plugin_repackaging.sh", "-p", "manylinux_2_17_x86_64", "market", "antv", "visualization", "0.1.7"] 
+```
+
+2.build
+```bash
+docker build -t dify-plugin-repackaging .
+```
+
+
+3.run
+
+linux
+```bash
+docker run -v $(pwd):/app dify-plugin-repackaging
+```
+windows
+```cmd
+docker run -v %cd%:/app dify-plugin-repackaging
+```
+4.override CMD(opt)
+
+linux
+```bash
+docker run -v $(pwd):/app dify-plugin-repackaging ./plugin_repackaging.sh -p manylinux_2_17_x86_64 market antv visualization 0.1.7
+```
 
 ### Prerequisites
 
