@@ -17,9 +17,9 @@ ARCH_NAME=`uname -m`
 OS_TYPE=$(uname)
 OS_TYPE=$(echo "$OS_TYPE" | tr '[:upper:]' '[:lower:]')
 
-CMD_NAME="dify-plugin-${OS_TYPE}-amd64-5g"
+CMD_NAME="dify-plugin-${OS_TYPE}-amd64"
 if [[ "arm64" == "$ARCH_NAME" || "aarch64" == "$ARCH_NAME" ]]; then
-	CMD_NAME="dify-plugin-${OS_TYPE}-arm64-5g"
+	CMD_NAME="dify-plugin-${OS_TYPE}-arm64"
 fi
 
 PIP_PLATFORM=""
@@ -137,7 +137,11 @@ repackage(){
 	fi
 	cd ${CURR_DIR}
 	chmod 755 ${CURR_DIR}/${CMD_NAME}
-	${CURR_DIR}/${CMD_NAME} plugin package ${CURR_DIR}/${PACKAGE_NAME} -o ${CURR_DIR}/${PACKAGE_NAME}-${PACKAGE_SUFFIX}.difypkg
+	${CURR_DIR}/${CMD_NAME} plugin package ${CURR_DIR}/${PACKAGE_NAME} -o ${CURR_DIR}/${PACKAGE_NAME}-${PACKAGE_SUFFIX}.difypkg --max-size 5120
+	if [ $? -ne 0 ]; then
+    echo "Repackage failed."
+    exit 1
+  fi
 	echo "Repackage success."
 }
 
