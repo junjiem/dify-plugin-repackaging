@@ -22,6 +22,8 @@ docker run -v $(pwd):/app dify-plugin-repackaging
 windows
 ```cmd
 docker run -v %cd%:/app dify-plugin-repackaging
+示例
+docker run -v %cd%:/work -v %cd%/output:/app/output dify-plugin-repackaging local /work/langgenius-modelscope_0.0.8.difypkg
 ```
 4.override CMD(opt)
 
