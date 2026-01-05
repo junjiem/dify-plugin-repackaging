@@ -1,4 +1,12 @@
 ## Dify 1.0 Plugin Downloading and Repackaging
+### How To Use With Github Action
+1. Fork this repository
+2. Open the GitHub page of your forked repository
+[https://github.com/{your_username}/dify-sandbox-python-requirements-download]()
+3. Run workflow
+![run_github_action_1](images/run_github_action_1.png)
+![run_github_action_2](images/run_github_action_2.png)
+
 ### How To Use With Docker
 
 1.change param in dockerfile
