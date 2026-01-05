@@ -6,6 +6,8 @@
 3. Run workflow
 ![run_github_action_1](images/run_github_action_1.png)
 ![run_github_action_2](images/run_github_action_2.png)
+4. Download artifact
+![run_github_action_3](images/run_github_action_3.png)
 
 ### How To Use With Docker
 
