@@ -15,11 +15,32 @@ on:
         description: "plugin version"
         required: true
         type: string
+      platform_arm:
+        description: "Use ARM platform (true = manylinux_2_17_aarch64, false = manylinux_2_17_x86_64)"
+        required: true
+        default: "false"
 
 jobs:
   repackage:
     runs-on: ubuntu-latest
     steps:
+      - name: Print workflow inputs
+        run: |
+          echo "plugin_author  = ${{ inputs.plugin_author }}"
+          echo "plugin_name    = ${{ inputs.plugin_name }}"
+          echo "plugin_version = ${{ inputs.plugin_version }}"
+          echo "platform_arm   = ${{ inputs.platform_arm }}"
+
+      - name: Resolve platform
+        run: |
+          if [ "${{ inputs.platform_arm }}" = "true" ]; then
+            echo "PIP_PLATFORM=manylinux_2_17_aarch64" >> "$GITHUB_ENV"
+            echo "PACKAGE_SUFFIX=offline-arm" >> "$GITHUB_ENV"
+          else
+            echo "PIP_PLATFORM=manylinux_2_17_x86_64" >> "$GITHUB_ENV"
+            echo "PACKAGE_SUFFIX=offline" >> "$GITHUB_ENV"
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -33,22 +54,28 @@ jobs:
 
       - name: Run plugin repackaging script
         run: |
-          ./plugin_repackaging.sh -p manylinux_2_17_x86_64 market "${{ github.event.inputs.plugin_author }}" "${{ github.event.inputs.plugin_name }}" "${{ github.event.inputs.plugin_version }}"
+          PIP_MIRROR_URL=https://pypi.org/simple \
+          ./plugin_repackaging.sh \
+          -p ${{ env.PIP_PLATFORM }} \
+          -s ${{ env.PACKAGE_SUFFIX }} \
+          market \
+          "${{ github.event.inputs.plugin_author }}" \
+          "${{ github.event.inputs.plugin_name }}" \
+          "${{ github.event.inputs.plugin_version }}"
 
       - name: Find repackaged artifact
-        id: artifact
         run: |
-          ARTIFACT_PATH=$(find . -type f -name '*-offline.difypkg' | head -n 1)
+          ARTIFACT_PATH=$(find . -type f -name "*-${PACKAGE_SUFFIX}.difypkg" | head -n 1)
           if [ -z "$ARTIFACT_PATH" ]; then
-            echo "No -offline.difypkg artifact found!"
+            echo "No *-${PACKAGE_SUFFIX}.difypkg artifact found!"
             exit 1
           fi
-          ARTIFACT_NAME=$(basename "$ARTIFACT_PATH")
-          echo "artifact=$ARTIFACT_PATH" >> $GITHUB_OUTPUT
-          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+      
+          echo "ARTIFACT_PATH=$ARTIFACT_PATH" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=$(basename "$ARTIFACT_PATH")" >> $GITHUB_ENV
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.artifact.outputs.artifact_name }}
-          path: ${{ steps.artifact.outputs.artifact }}
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_PATH }}
