@@ -54,7 +54,7 @@ jobs:
 
       - name: Run plugin repackaging script
         run: |
-          PIP_MIRROR_URL=https://pypi.org/simple \
+          PIP_MIRROR_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
           ./plugin_repackaging.sh \
           -p ${{ env.PIP_PLATFORM }} \
           -s ${{ env.PACKAGE_SUFFIX }} \
