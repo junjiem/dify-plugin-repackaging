@@ -79,9 +79,15 @@ jobs:
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.ARTIFACT_PATH }}
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with: tag_name: ${{ github.sha }}
-              files: lfenghx-skill_agent_0.0.3-offline.difypkg
+      - name: Commit and Push to repository
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p releases/
+          cp "${{ env.ARTIFACT_PATH }}" releases/
+          git add releases/"${{ env.ARTIFACT_NAME }}"
+          git commit -m "chore: auto-upload packaged plugin ${{ env.ARTIFACT_NAME }}"
+          git push origin HEAD:${{ github.ref }}
+       
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
