@@ -79,3 +79,9 @@ jobs:
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.ARTIFACT_PATH }}
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with: tag_name: ${{ github.sha }}
+              files: lfenghx-skill_agent_0.0.3-offline.difypkg
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
