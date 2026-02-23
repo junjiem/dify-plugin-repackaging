@@ -85,9 +85,14 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           mkdir -p bin/
           cp "${{ env.ARTIFACT_PATH }}" bin/
+
+          REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+          git remote set-url origin "$REPO_URL" 2>/dev/null || git remote add origin "$REPO_URL"
+
           git add bin/"${{ env.ARTIFACT_NAME }}"
           git commit -m "dist: add repackaged plugin ${{ env.ARTIFACT_NAME }} [skip ci]"
           git push origin HEAD:${{ github.ref_name }}
+
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
