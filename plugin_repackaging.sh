@@ -110,11 +110,15 @@ repackage(){
 	echo "Unzip success."
 	echo "Repackaging ..."
 	cd ${CURR_DIR}/${PACKAGE_NAME}
+	mkdir -p ./wheels
+	download_setuptools
 	pip download ${PIP_PLATFORM} -r requirements.txt -d ./wheels --index-url ${PIP_MIRROR_URL} --trusted-host mirrors.aliyun.com
 	if [[ $? -ne 0 ]]; then
 		echo "Pip download failed."
 		exit 1
 	fi
+	build_wheels_from_sdists
+	cleanup_wheels_non_whl
 	if [[ "linux" == "$OS_TYPE" ]]; then
 		sed -i '1i\--no-index --find-links=./wheels/' requirements.txt
 	elif [[ "darwin" == "$OS_TYPE" ]]; then
@@ -145,15 +149,44 @@ repackage(){
 	echo "Repackage success."
 }
 
+# 如果 'unzip' 命令不存在，则安装它。
 install_unzip(){
 	if ! command -v unzip &> /dev/null; then
 		echo "Installing unzip ..."
-		yum -y install unzip
+		#yum -y install unzip
+		sudo apt -y install unzip
 		if [ $? -ne 0 ]; then
 			echo "Install unzip failed."
 			exit 1
 		fi
 	fi
+}
+
+download_setuptools(){
+    echo "Downloading setuptools..."
+    pip download ${PIP_PLATFORM} setuptools>=40.8.0 -d ./wheels --index-url ${PIP_MIRROR_URL} --trusted-host mirrors.aliyun.com
+    if [[ $? -ne 0 ]]; then
+        echo "Download setuptools failed."
+        exit 1
+    fi
+}
+
+build_wheels_from_sdists(){
+	while IFS= read -r -d '' sdist_file; do
+		pip wheel --no-deps -w ./wheels "${sdist_file}"
+		if [[ $? -ne 0 ]]; then
+			echo "Build wheel failed: ${sdist_file}"
+			exit 1
+		fi
+		rm -f "${sdist_file}"
+	done < <(find ./wheels -maxdepth 1 -type f \( -name "*.tar.gz" -o -name "*.zip" \) -print0)
+}
+
+cleanup_wheels_non_whl(){
+	if [ ! -d "./wheels" ]; then
+		return 0
+	fi
+	find ./wheels -type f ! -name "*.whl" -delete
 }
 
 print_usage() {
@@ -167,7 +200,7 @@ print_usage() {
 
 while getopts "p:s:" opt; do
 	case "$opt" in
-		p) PIP_PLATFORM="--platform ${OPTARG} --only-binary=:all:" ;;
+		p) PIP_PLATFORM="--platform ${OPTARG}" ;;
 		s) PACKAGE_SUFFIX="${OPTARG}" ;;
 		*) print_usage; exit 1 ;;
 	esac
@@ -192,3 +225,4 @@ print_usage
 exit 1
 esac
 exit 0
+
