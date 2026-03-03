@@ -110,11 +110,43 @@ repackage(){
 	echo "Unzip success."
 	echo "Repackaging ..."
 	cd ${CURR_DIR}/${PACKAGE_NAME}
-	pip download ${PIP_PLATFORM} -r requirements.txt -d ./wheels --index-url ${PIP_MIRROR_URL} --trusted-host mirrors.aliyun.com
+	
+	# 修改点1: 升级pip到最新版
+	pip install --upgrade pip setuptools wheel
+	
+	# 修改点2: 清除pip缓存
+	pip cache purge
+	
+	# 修改点3: 修复pip download命令
+	if [ -n "$PIP_PLATFORM" ]; then
+		# 如果有平台参数，使用平台相关的下载
+		pip download \
+			--platform ${PIP_PLATFORM#--platform } \
+			--only-binary=:all: \
+			-r requirements.txt \
+			-d ./wheels \
+			--index-url ${PIP_MIRROR_URL} \
+			--trusted-host mirrors.aliyun.com \
+			--no-cache-dir
+	else
+		# 如果没有平台参数，普通下载
+		pip download \
+			-r requirements.txt \
+			-d ./wheels \
+			--index-url ${PIP_MIRROR_URL} \
+			--trusted-host mirrors.aliyun.com \
+			--no-cache-dir
+	fi
+	
 	if [[ $? -ne 0 ]]; then
 		echo "Pip download failed."
 		exit 1
 	fi
+	
+	# 修改点4: 验证pandas版本是否正确下载
+	echo "验证下载的wheel包:"
+	ls -la ./wheels/ | grep pandas
+	
 	if [[ "linux" == "$OS_TYPE" ]]; then
 		sed -i '1i\--no-index --find-links=./wheels/' requirements.txt
 	elif [[ "darwin" == "$OS_TYPE" ]]; then
@@ -123,6 +155,7 @@ repackage(){
 	  ' requirements.txt
 		rm -f requirements.txt.bak
 	fi
+	
 	IGNORE_PATH=.difyignore
 	if [ ! -f "$IGNORE_PATH" ]; then
 		IGNORE_PATH=.gitignore
@@ -135,6 +168,7 @@ repackage(){
 			rm -f "${IGNORE_PATH}.bak"
 		fi
 	fi
+	
 	cd ${CURR_DIR}
 	chmod 755 ${CURR_DIR}/${CMD_NAME}
 	${CURR_DIR}/${CMD_NAME} plugin package ${CURR_DIR}/${PACKAGE_NAME} -o ${CURR_DIR}/${PACKAGE_NAME}-${PACKAGE_SUFFIX}.difypkg --max-size 5120
@@ -167,7 +201,10 @@ print_usage() {
 
 while getopts "p:s:" opt; do
 	case "$opt" in
-		p) PIP_PLATFORM="--platform ${OPTARG} --only-binary=:all:" ;;
+		p) 
+			PIP_PLATFORM="${OPTARG}"
+			# 不再在这里添加参数，而是在下载时使用
+			;;
 		s) PACKAGE_SUFFIX="${OPTARG}" ;;
 		*) print_usage; exit 1 ;;
 	esac
