@@ -10,7 +10,7 @@ MARKETPLACE_API_URL="${MARKETPLACE_API_URL:-$DEFAULT_MARKETPLACE_API_URL}"
 PIP_MIRROR_URL="${PIP_MIRROR_URL:-$DEFAULT_PIP_MIRROR_URL}"
 
 CURR_DIR=`dirname $0`
-cd $CURR_DIR
+cd $CURR_DIR || exit 1
 CURR_DIR=`pwd`
 USER=`whoami`
 ARCH_NAME=`uname -m`
@@ -109,39 +109,59 @@ repackage(){
 	fi
 	echo "Unzip success."
 	echo "Repackaging ..."
-	cd ${CURR_DIR}/${PACKAGE_NAME}
-	pip download ${PIP_PLATFORM} -r requirements.txt -d ./wheels --index-url ${PIP_MIRROR_URL} --trusted-host mirrors.aliyun.com
-	if [[ $? -ne 0 ]]; then
-		echo "Pip download failed."
+	cd ${CURR_DIR}/${PACKAGE_NAME} || exit 1
+
+	if python3 -m pip --version &> /dev/null 2>&1; then
+		PIP_CMD="python3 -m pip"
+	elif command -v pip &> /dev/null && pip --version &> /dev/null 2>&1; then
+		PIP_CMD=pip
+	elif command -v pip3 &> /dev/null && pip3 --version &> /dev/null 2>&1; then
+		PIP_CMD=pip3
+	else
+		echo "pip not found. Install: python3 -m ensurepip --upgrade"
 		exit 1
 	fi
-	if [[ "linux" == "$OS_TYPE" ]]; then
-		sed -i '1i\--no-index --find-links=./wheels/' requirements.txt
-	elif [[ "darwin" == "$OS_TYPE" ]]; then
-		sed -i ".bak" '1i\
---no-index --find-links=./wheels/
-	  ' requirements.txt
-		rm -f requirements.txt.bak
-	fi
-	IGNORE_PATH=.difyignore
-	if [ ! -f "$IGNORE_PATH" ]; then
-		IGNORE_PATH=.gitignore
-	fi
-	if [ -f "$IGNORE_PATH" ]; then
-		if [[ "linux" == "$OS_TYPE" ]]; then
-			sed -i '/^wheels\//d' "${IGNORE_PATH}"
-		elif [[ "darwin" == "$OS_TYPE" ]]; then
-			sed -i ".bak" '/^wheels\//d' "${IGNORE_PATH}"
-			rm -f "${IGNORE_PATH}.bak"
+	echo "Using pip: ${PIP_CMD}"
+
+	if [ -f "pyproject.toml" ] && [ ! -f "requirements.txt" ]; then
+		if command -v uv &> /dev/null; then
+			echo "Compiling pyproject.toml with uv..."
+			uv pip compile pyproject.toml -o requirements.txt --index-url "${PIP_MIRROR_URL}" || exit 1
+		else
+			echo "pyproject.toml found but requirements.txt is missing and uv is not installed."
+			echo "Install uv or commit requirements.txt."
+			exit 1
 		fi
 	fi
-	cd ${CURR_DIR}
+
+	[ ! -f "requirements.txt" ] && echo "No requirements.txt found" && exit 1
+
+	PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
+	PYTHON_MINOR=$(echo $PYTHON_VERSION | cut -d. -f2)
+	if [ "$PYTHON_MINOR" -ge 14 ]; then
+		echo "Warning: Python $PYTHON_VERSION may have compatibility issues"
+	fi
+
+	echo "Downloading dependencies..."
+	${PIP_CMD} download ${PIP_PLATFORM} --prefer-binary -r requirements.txt -d ./wheels \
+		--index-url ${PIP_MIRROR_URL} --trusted-host mirrors.aliyun.com
+	[ $? -ne 0 ] && exit 1
+
+	if [[ "linux" == "$OS_TYPE" ]]; then
+		sed -i '1i\--no-index --find-links=./wheels/' requirements.txt
+		[ -f ".difyignore" ] && IGNORE_PATH=.difyignore || IGNORE_PATH=.gitignore
+		[ -f "$IGNORE_PATH" ] && sed -i '/^wheels\//d' "${IGNORE_PATH}"
+	elif [[ "darwin" == "$OS_TYPE" ]]; then
+		sed -i ".bak" '1i\--no-index --find-links=./wheels/' requirements.txt && rm -f requirements.txt.bak
+		[ -f ".difyignore" ] && IGNORE_PATH=.difyignore || IGNORE_PATH=.gitignore
+		[ -f "$IGNORE_PATH" ] && sed -i ".bak" '/^wheels\//d' "${IGNORE_PATH}" && rm -f "${IGNORE_PATH}.bak"
+	fi
+
+	cd ${CURR_DIR} || exit 1
 	chmod 755 ${CURR_DIR}/${CMD_NAME}
-	${CURR_DIR}/${CMD_NAME} plugin package ${CURR_DIR}/${PACKAGE_NAME} -o ${CURR_DIR}/${PACKAGE_NAME}-${PACKAGE_SUFFIX}.difypkg --max-size 5120
-	if [ $? -ne 0 ]; then
-    echo "Repackage failed."
-    exit 1
-  fi
+	${CURR_DIR}/${CMD_NAME} plugin package ${CURR_DIR}/${PACKAGE_NAME} \
+		-o ${CURR_DIR}/${PACKAGE_NAME}-${PACKAGE_SUFFIX}.difypkg --max-size 5120
+	[ $? -ne 0 ] && echo "Repackage failed." && exit 1
 	echo "Repackage success."
 }
 
