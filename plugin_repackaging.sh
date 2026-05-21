@@ -151,6 +151,15 @@ repackage(){
 		echo "⚠ Warning: No pyproject.toml or requirements.txt found"
 	fi
 
+	update_requirements_for_offline() {
+		local REQFILE="$1"
+		[ -f "$REQFILE" ] || return 0
+		awk '
+			BEGIN { print "--no-index --find-links=./wheels/" }
+			$0 !~ /^--no-index[[:space:]]+--find-links=\.\/wheels\/?$/ { print }
+		' "$REQFILE" > "$REQFILE.tmp" && mv "$REQFILE.tmp" "$REQFILE"
+	}
+
 	# Inject [tool.uv] config into pyproject.toml (runtime will use local wheels offline)
 	inject_uv_into_pyproject() {
 		local PYFILE="$1"
@@ -349,13 +358,11 @@ PY
 	# ============================================
 	echo ""
 	echo "Updating requirements.txt for offline installation..."
+	update_requirements_for_offline requirements.txt
+	[ -f ".difyignore" ] && IGNORE_PATH=.difyignore || IGNORE_PATH=.gitignore
 	if [[ "linux" == "$OS_TYPE" ]]; then
-		sed -i '1i\--no-index --find-links=./wheels/' requirements.txt
-		[ -f ".difyignore" ] && IGNORE_PATH=.difyignore || IGNORE_PATH=.gitignore
 		[ -f "$IGNORE_PATH" ] && sed -i '/^wheels\//d' "${IGNORE_PATH}"
 	elif [[ "darwin" == "$OS_TYPE" ]]; then
-		sed -i ".bak" '1i\--no-index --find-links=./wheels/' requirements.txt && rm -f requirements.txt.bak
-		[ -f ".difyignore" ] && IGNORE_PATH=.difyignore || IGNORE_PATH=.gitignore
 		[ -f "$IGNORE_PATH" ] && sed -i ".bak" '/^wheels\//d' "${IGNORE_PATH}" && rm -f "${IGNORE_PATH}.bak"
 	fi
 	echo "✓ requirements.txt updated for offline mode"
