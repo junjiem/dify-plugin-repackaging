@@ -332,12 +332,27 @@ PY
 	[ -n "$PIP_PLATFORM" ] && echo "Platform: ${RAW_PLATFORM}"
 
 	mkdir -p ./wheels
-	echo "Downloading wheels to ./wheels/..."
-	${PIP_CMD} download ${PIP_PLATFORM} --prefer-binary -r requirements.txt -d ./wheels \
+	echo "Downloading prebuilt wheels to ./wheels/..."
+	${PIP_CMD} download ${PIP_PLATFORM} --only-binary=:all: --prefer-binary -r requirements.txt -d ./wheels \
 		--index-url ${PIP_MIRROR_URL} --trusted-host mirrors.aliyun.com
 	if [[ $? -ne 0 ]]; then
-		echo "✗ Error: Failed to download dependencies"
-		exit 1
+		if is_native_target; then
+			echo "⚠ Prebuilt wheels are unavailable for one or more dependencies."
+			echo "Building missing dependencies from source on the native platform..."
+			${PIP_CMD} wheel --wheel-dir ./wheels --prefer-binary -r requirements.txt \
+				--index-url ${PIP_MIRROR_URL} --trusted-host mirrors.aliyun.com
+			if [[ $? -ne 0 ]]; then
+				echo "✗ Error: Failed to build dependency wheels"
+				echo "  Install the package build prerequisites and retry."
+				echo "  Rust extensions such as jiter require rust/cargo, a C compiler, and Python development headers."
+				exit 1
+			fi
+		else
+			echo "✗ Error: Prebuilt wheels are unavailable for target platform ${RAW_PLATFORM}."
+			echo "  Cross-platform builds are not supported because compiled wheels must be built on the target OS and CPU architecture."
+			echo "  Run this script on a native ${RAW_PLATFORM} environment, then retry."
+			exit 1
+		fi
 	fi
 
 	# Count downloaded wheels
@@ -402,6 +417,33 @@ install_unzip(){
 			echo "Install unzip failed."
 			exit 1
 		fi
+	fi
+}
+
+# Return success only when a source build produces wheels for the requested target.
+is_native_target(){
+	local TARGET_ARCH=""
+
+	if [[ -z "$RAW_PLATFORM" ]]; then
+		return 0
+	fi
+
+	case "$RAW_PLATFORM" in
+		*linux*|*manylinux*) [[ "$OS_TYPE" == "linux" ]] || return 1 ;;
+		*macos*|*darwin*) [[ "$OS_TYPE" == "darwin" ]] || return 1 ;;
+		*) return 1 ;;
+	esac
+
+	case "$RAW_PLATFORM" in
+		*aarch64*|*arm64*) TARGET_ARCH="arm64" ;;
+		*x86_64*|*amd64*) TARGET_ARCH="amd64" ;;
+		*) return 1 ;;
+	esac
+
+	if [[ "$TARGET_ARCH" == "arm64" ]]; then
+		[[ "$ARCH_NAME" == "aarch64" || "$ARCH_NAME" == "arm64" ]]
+	else
+		[[ "$ARCH_NAME" == "x86_64" || "$ARCH_NAME" == "amd64" ]]
 	fi
 }
 
