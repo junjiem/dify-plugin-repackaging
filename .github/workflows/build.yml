@@ -16,7 +16,7 @@ on:
         required: true
         type: string
       platform_arm:
-        description: "Use ARM platform (true = manylinux_2_17_aarch64, false = manylinux_2_17_x86_64)"
+        description: "Use ARM platform (true = manylinux_2_28_aarch64, false = manylinux_2_17_x86_64)"
         required: true
         default: "false"
 
@@ -34,7 +34,7 @@ jobs:
       - name: Resolve platform
         run: |
           if [ "${{ inputs.platform_arm }}" = "true" ]; then
-            echo "PIP_PLATFORM=manylinux_2_17_aarch64" >> "$GITHUB_ENV"
+            echo "PIP_PLATFORM=manylinux_2_28_aarch64" >> "$GITHUB_ENV"
             echo "PACKAGE_SUFFIX=offline-arm" >> "$GITHUB_ENV"
           else
             echo "PIP_PLATFORM=manylinux_2_17_x86_64" >> "$GITHUB_ENV"
