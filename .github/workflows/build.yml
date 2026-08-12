@@ -22,7 +22,7 @@ on:
 
 jobs:
   repackage:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.platform_arm == 'true' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     steps:
       - name: Print workflow inputs
         run: |
@@ -48,6 +48,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Verify runner architecture
+        run: uname -m
+
+      - name: Install native wheel build dependencies
+        if: inputs.platform_arm == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential python3-dev rustc cargo
 
       - name: Make plugin_repackaging.sh executable
         run: chmod +x ./plugin_repackaging.sh
