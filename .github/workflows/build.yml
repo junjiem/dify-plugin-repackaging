@@ -34,10 +34,10 @@ jobs:
       - name: Resolve platform
         run: |
           if [ "${{ inputs.platform_arm }}" = "true" ]; then
-            echo "PIP_PLATFORM=manylinux_2_28_aarch64" >> "$GITHUB_ENV"
+            echo "TARGET_PLATFORM=manylinux_2_28_aarch64" >> "$GITHUB_ENV"
             echo "PACKAGE_SUFFIX=offline-arm" >> "$GITHUB_ENV"
           else
-            echo "PIP_PLATFORM=manylinux_2_17_x86_64" >> "$GITHUB_ENV"
+            echo "TARGET_PLATFORM=manylinux_2_17_x86_64" >> "$GITHUB_ENV"
             echo "PACKAGE_SUFFIX=offline" >> "$GITHUB_ENV"
           fi
 
@@ -65,7 +65,7 @@ jobs:
         run: |
           PIP_MIRROR_URL=https://pypi.org/simple \
           ./plugin_repackaging.sh \
-          -p ${{ env.PIP_PLATFORM }} \
+          -p ${{ env.TARGET_PLATFORM }} \
           -s ${{ env.PACKAGE_SUFFIX }} \
           market \
           "${{ github.event.inputs.plugin_author }}" \

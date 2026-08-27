@@ -23,7 +23,7 @@ if [[ "arm64" == "$ARCH_NAME" || "aarch64" == "$ARCH_NAME" ]]; then
 fi
 
 # Cross packaging / resolution controls
-PIP_PLATFORM=""
+PIP_PLATFORM_ARGS=""
 RAW_PLATFORM=""    # raw value from -p, e.g. manylinux2014_x86_64
 PACKAGE_SUFFIX="offline"
 PRERELEASE_ALLOW=0
@@ -329,17 +329,18 @@ PY
 	echo "Step 3: Downloading dependencies"
 	echo "=========================================="
 	echo "Index URL: ${PIP_MIRROR_URL}"
-	[ -n "$PIP_PLATFORM" ] && echo "Platform: ${RAW_PLATFORM}"
+	[ -n "$PIP_PLATFORM_ARGS" ] && echo "Platform: ${RAW_PLATFORM}"
 
 	mkdir -p ./wheels
 	echo "Downloading prebuilt wheels to ./wheels/..."
-	${PIP_CMD} download ${PIP_PLATFORM} --only-binary=:all: --prefer-binary -r requirements.txt -d ./wheels \
+	${PIP_CMD} download ${PIP_PLATFORM_ARGS} --only-binary=:all: --prefer-binary -r requirements.txt -d ./wheels \
 		--index-url ${PIP_MIRROR_URL} --trusted-host mirrors.aliyun.com
 	if [[ $? -ne 0 ]]; then
 		if is_native_target; then
 			echo "⚠ Prebuilt wheels are unavailable for one or more dependencies."
 			echo "Building missing dependencies from source on the native platform..."
-			${PIP_CMD} wheel --wheel-dir ./wheels --prefer-binary -r requirements.txt \
+			# 清除 pip 的平台环境变量，避免源码构建被误判为交叉编译。
+			env -u PIP_PLATFORM ${PIP_CMD} wheel --wheel-dir ./wheels --prefer-binary -r requirements.txt \
 				--index-url ${PIP_MIRROR_URL} --trusted-host mirrors.aliyun.com
 			if [[ $? -ne 0 ]]; then
 				echo "✗ Error: Failed to build dependency wheels"
@@ -459,7 +460,7 @@ print_usage() {
 
 while getopts "p:s:R" opt; do
 	case "$opt" in
-		p) RAW_PLATFORM="${OPTARG}"; PIP_PLATFORM="--platform ${OPTARG} --only-binary=:all:" ;;
+		p) RAW_PLATFORM="${OPTARG}"; PIP_PLATFORM_ARGS="--platform ${OPTARG}" ;;
 		s) PACKAGE_SUFFIX="${OPTARG}" ;;
 		R) PRERELEASE_ALLOW=1 ;;
 		*) print_usage; exit 1 ;;
